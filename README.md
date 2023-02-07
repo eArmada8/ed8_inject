@@ -32,11 +32,13 @@ Put aa - inject model.py and unpackpkg.py in *{CS3 folder}*/data/asset/D3D11_us 
 ### Notes:
 1. CS3 / CS4 / Hajimari assets can be used in each other's games, although currently there are shader issues which may result in inability to load.  CS1 and CS2 assets can only be used within their own games.
 
-1. The injector expects the target to already exist and will refuse to inject into a new file.  This is for two reasons: 1. so that it can make a backup, and you won't be confused on re-injections, and 2. to prevent confusing you if you make a spelling mistake (since it wouldn't otherwise cause an error).  So in CS3/CS4, extract BOTH source and target, not just source.
+2. The injector expects the target to already exist and will refuse to inject into a new file.  This is for two reasons: 1. so that it can make a backup, and you won't be confused on re-injections, and 2. to prevent confusing you if you make a spelling mistake (since it wouldn't otherwise cause an error).  So in CS3/CS4, extract BOTH source and target, not just source.
 
-2. CS4 will read .pkg files preferentially over the .pka file without further fuss.  CS3 will do so as well, BUT you need to move the files to *{CS3 folder}*/data/asset/D3D11_us (or at least I did with mine - NIS America Steam release).  My suggestion for CS3 is to move everything over except the .pka file and extract_pka.py.  Keep your backups in D3D11_us as well, and you can inject back and forth.
+3. CS4 will read .pkg files preferentially over the .pka file without further fuss.  CS3 will do so as well, BUT you need to move the files to *{CS3 folder}*/data/asset/D3D11_us (or at least I did with mine - NIS America Steam release).  My suggestion for CS3 is to move everything over except the .pka file and extract_pka.py.  Keep your backups in D3D11_us as well, and you can inject back and forth.
 
-3. To do whole model swaps, you will need to replace at a minimum columns B,D,E in the excel sheet from step 1.  Maybe other parts too, I haven't fully figured this out.  Be careful, the model parts in column E are often shared.  You may also want to swap the .inf files.
+4. To do whole model swaps, you will need to replace at a minimum columns B,D,E in the excel sheet from step 1.  Maybe other parts too, I haven't fully figured this out.  Be careful, the model parts in column E are often shared.  You may also want to swap the .inf files.
+
+5. Any time you are porting a model into game that does not have that model (for example using a CS4 exclusive costume in CS3), you will want to copy the .inf file from the source game to the target game.  They are in *{CS3 / CS4 / Hajimari folder}*/data/chr/chr/*{character folder}*.  These should **not** be renamed, but copied as is.
 
 ## Tokyo Xanadu eX+
 Use aa - txe inject model.py instead.  Automatically pulls the required files from the .bra archives for injection.  Requires txe_file_extract.py and my fork of unpackpkg.py (eArmada/unpackpkg).
