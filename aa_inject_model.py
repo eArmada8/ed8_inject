@@ -152,22 +152,13 @@ if __name__ == "__main__":
                 targetfile = targetfile[:-4] # Strip off the '.pkg' if present
     targetfile = targetfile.upper()
 
-    # Generate the search and substitution strings to inject into the target model
-    if sourcefile.split('_')[-1][0] == 'C':
-        source_string = sourcefile
-        target_string = targetfile
-    else:
-        source_string = sourcefile.split('_')[0] + '_' + sourcefile.split('_')[1]
-        target_string = targetfile.split('_')[0] + '_' + targetfile.split('_')[1]
-    offset_difference = len(target_string) - len(source_string)
-    
     # Make a target backup, only if no backup exists.
     if not os.path.exists(targetfile + '.pkg.original'):
         shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.original')
 
-    # Read source model into memory
-    with open(file_to_inject, 'rb') as f:
+    # Grab original asset symbol
+    with open(targetfile + '.pkg.original', 'rb') as f:
         new_asset_symbol = retrieve_asset_symbol(f)
 
     # Write patched model into target
-    inject_asset_symbol_into_pkg(targetfile + '.pkg.original', targetfile + '.pkg', new_asset_symbol)
+    inject_asset_symbol_into_pkg(sourcefile + '.pkg', targetfile + '.pkg', new_asset_symbol)
