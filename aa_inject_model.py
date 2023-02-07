@@ -1,5 +1,8 @@
 # Short script to inject one model into another in Falcom games.  If a source backup exists, it will use the backup
 # instead of the existing file.  If no target backup exists, it will create one before erasing the target.
+#
+# Requires my fork of unpackpkg.py, put in the same directory
+#
 # GitHub eArmada8/misc_kiseki
 
 import sys, os, shutil, struct, io
