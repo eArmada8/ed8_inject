@@ -1,0 +1,108 @@
+# Short script to patch a model with new shaders in Falcom ED8 games.  It will create a backup,
+# and then it will attempt to insert all new shaders.  Thank you to My Name for pointing out
+# the method and the necessity.
+#
+# Requires aa_inject_model.py and unpackpkg.py, put in the same directory
+#
+# GitHub eArmada8/misc_kiseki
+
+from aa_inject_model import *
+
+#Much of this code is taken from uyjulian/unpackpka, thank you to uyjulian
+#Note there WILL be duplicate entries - e.g. asset_D3D11.xml
+def get_pka_individual_file_contents (f):
+    f.seek(0,0)
+    # Check for proper file format
+    pka_header, = struct.unpack("<I", f.read(4))
+    if pka_header != 0x7FF7CF0D:
+        raise Exception("This isn't a pka file")
+    # Grab the total number of .pkg files in the .pka file
+    total_package_entries, = struct.unpack("<I", f.read(4))
+    # Grab the names of all .pkg files in the .pka file as well how many files in each package
+    package_entries = {}
+    for _ in range(total_package_entries):
+        package_name, number_files = struct.unpack("<32sI", f.read(32+4))
+        # Grab the names of all files in each individual .pkg archive as well as their hashes
+        file_entries = []
+        for _ in range(number_files):
+            file_entry_name, file_entry_hash = struct.unpack("<64s32s", f.read(64+32))
+            file_entries.append([file_entry_name.rstrip(b"\x00"), file_entry_hash])
+        package_entries[package_name.rstrip(b"\x00").decode("ASCII")] = file_entries
+    total_file_entries, = struct.unpack("<I", f.read(4))
+    # Grab the metadata of all files in the .pka file, indexed by file hashes
+    file_entries = {}
+    for _ in range(total_file_entries):
+        file_entry_hash, file_entry_offset, file_entry_compressed_size, file_entry_uncompressed_size,\
+            file_entry_flags = struct.unpack("<32sQIII", f.read(32+8+4+4+4))
+        file_entries[file_entry_hash] = [file_entry_offset, file_entry_compressed_size, file_entry_uncompressed_size, file_entry_flags]
+    all_files = [x for y in package_entries.values() for x in y]
+    file_contents = []
+    for i in range(len(all_files)):
+        file_contents.append({"file_entry_name": all_files[i][0].decode('utf-8'),\
+            "file_entry_uncompressed_size": file_entries[all_files[i][1]][2],\
+            "file_entry_compressed_size": file_entries[all_files[i][1]][1],\
+            "file_entry_offset": file_entries[all_files[i][1]][0],\
+            "file_entry_flags": file_entries[all_files[i][1]][3]})
+    return(file_contents)
+
+def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename):
+    with open(pka_filename, 'rb') as asset_f:
+        pka_files = get_pka_individual_file_contents(asset_f)
+        with open(pkg_filename, 'rb') as f:
+            file_contents = get_pkg_contents(f)
+            new_file_contents = []
+            new_file_stream = io.BytesIO()
+            for i in range(len(file_contents)):
+                if 'fx#' in file_contents[i]["file_entry_name"]:
+                    shader_entries = [x for x in pka_files if file_contents[i]["file_entry_name"] == x["file_entry_name"]]
+                    if len(shader_entries) > 0:
+                        print("Shader {0} found, replacing...".format(file_contents[i]["file_entry_name"]))
+                        file = retrieve_file (asset_f, shader_entries[0]["file_entry_name"], pka_files, decompress = False)
+                        new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file,\
+                            shader_entries[0]) # Offset will be fixed at time of packing
+                    else:
+                        print("Shader {0} not found, including original...".format(file_contents[i]["file_entry_name"]))
+                        file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
+                        new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
+                else:
+                    file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
+                    new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
+        write_pkg_file (new_pkg_filename, new_file_stream, new_file_contents, magic = b'\x00\x00\x00\x00')
+
+
+if __name__ == "__main__":
+    # Set current directory
+    os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
+    # Determine the assets.pka filename, use the first argument as default
+    try:
+        asset_file = sys.argv[1].lower()
+        if not os.path.exists(asset_file):
+            raise Exception('Error: Asset archive "' + asset_file + '" does not exist!')
+    except IndexError:
+        asset_file = str(input("Please enter the name of assets archive: [default: assets.pka]  ") or "assets.pka").lower()
+        while not os.path.exists(asset_file):
+            asset_file = str(input("File does not exist.  Please enter the name of assets archive: [default: assets.pka]  ") or "assets.pka")
+
+    # Grab the name of the target model (model to be have all shaders replaced)
+    try:
+        targetfile = sys.argv[2].lower()
+        if targetfile[-4:] == '.pkg':
+            targetfile = targetfile[:-4] # Strip off the '.pkg' if present
+        if not os.path.exists(targetfile + '.pkg'):
+            raise Exception('Error: Package "' + targetfile + '" does not exist!')
+    except IndexError:
+        targetfile = str(input("Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: "))
+        if targetfile[-4:] == '.pkg':
+            targetfile = targetfile[:-4] # Strip off the '.pkg' if present
+        while not os.path.exists(targetfile + '.pkg'):
+            targetfile = str(input("File does not exist.  Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: "))
+            if targetfile[-4:] == '.pkg':
+                targetfile = targetfile[:-4] # Strip off the '.pkg' if present
+    targetfile = targetfile.upper()
+
+    # Make a target backup (prior backups will be overwritten)
+    shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.bak')
+
+    # Patch model into target
+    replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
