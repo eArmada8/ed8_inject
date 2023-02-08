@@ -6,6 +6,7 @@
 #
 # GitHub eArmada8/misc_kiseki
 
+import sys, os, shutil, struct, io, glob
 from aa_inject_model import *
 
 #Much of this code is taken from uyjulian/unpackpka, thank you to uyjulian
@@ -45,30 +46,55 @@ def get_pka_individual_file_contents (f):
             "file_entry_flags": file_entries[all_files[i][1]][3]})
     return(file_contents)
 
-def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename):
-    with open(pka_filename, 'rb') as asset_f:
-        pka_files = get_pka_individual_file_contents(asset_f)
-        with open(pkg_filename, 'rb') as f:
-            file_contents = get_pkg_contents(f)
-            new_file_contents = []
-            new_file_stream = io.BytesIO()
-            for i in range(len(file_contents)):
-                if 'fx#' in file_contents[i]["file_entry_name"]:
-                    shader_entries = [x for x in pka_files if file_contents[i]["file_entry_name"] == x["file_entry_name"]]
-                    if len(shader_entries) > 0:
-                        print("Shader {0} found, replacing...".format(file_contents[i]["file_entry_name"]))
-                        file = retrieve_file (asset_f, shader_entries[0]["file_entry_name"], pka_files, decompress = False)
-                        new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file,\
-                            shader_entries[0]) # Offset will be fixed at time of packing
-                    else:
-                        print("Shader {0} not found, including original...".format(file_contents[i]["file_entry_name"]))
-                        file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
-                        new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
+def find_file_in_pkg(file_to_find, list_of_pkgs_to_avoid = []):
+    pkgs = [x for x in glob.glob('*.pkg') if x not in list_of_pkgs_to_avoid]
+    match = False
+    for i in range(len(pkgs)):
+        with open(pkgs[i],'rb') as f:
+            file_contents = [x["file_entry_name"] for x in get_pkg_contents(f)]
+            if file_to_find in file_contents:
+                match = pkgs[i]
+                break
+    return(match)
+
+# Shaders can be pulled from either a PKA or the current folder can be searched
+def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename = False):
+    using_pka = False
+    if pka_filename != False:
+        asset_f = open(pka_filename, 'rb')
+        using_pka = True
+        archive_files = get_pka_individual_file_contents(asset_f)
+    with open(pkg_filename, 'rb') as f:
+        file_contents = get_pkg_contents(f)
+        new_file_contents = []
+        new_file_stream = io.BytesIO()
+        for i in range(len(file_contents)):
+            if 'fx#' in file_contents[i]["file_entry_name"]:
+                if not using_pka:
+                    file_match = find_file_in_pkg(file_contents[i]["file_entry_name"],\
+                        list_of_pkgs_to_avoid = [pkg_filename, new_pkg_filename]) # We don't want the old shader!
+                    if file_match != False:
+                        asset_f = open(file_match, 'rb')
+                        archive_files = get_pkg_contents(asset_f)
+                shader_entries = [x for x in archive_files if file_contents[i]["file_entry_name"] == x["file_entry_name"]]
+                if len(shader_entries) > 0:
+                    print("Shader {0} found, replacing...".format(file_contents[i]["file_entry_name"]))
+                    file = retrieve_file (asset_f, shader_entries[0]["file_entry_name"], archive_files, decompress = False)
+                    new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file,\
+                        shader_entries[0]) # Offset will be fixed at time of packing
+                    if not using_pka:
+                        asset_f.close()
                 else:
+                    print("Shader {0} not found, including original...".format(file_contents[i]["file_entry_name"]))
                     file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
                     new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
+            else:
+                file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
+                new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
         write_pkg_file (new_pkg_filename, new_file_stream, new_file_contents, magic = b'\x00\x00\x00\x00')
-
+    if using_pka == True:
+        asset_f.close()
+    return
 
 if __name__ == "__main__":
     # Set current directory
@@ -77,12 +103,16 @@ if __name__ == "__main__":
     # Determine the assets.pka filename, use the first argument as default
     try:
         asset_file = sys.argv[1].lower()
-        if not os.path.exists(asset_file):
+        if asset_file == "none":
+            pass
+        elif not os.path.exists(asset_file):
             raise Exception('Error: Asset archive "' + asset_file + '" does not exist!')
     except IndexError:
-        asset_file = str(input("Please enter the name of assets archive: [default: assets.pka]  ") or "assets.pka").lower()
-        while not os.path.exists(asset_file):
-            asset_file = str(input("File does not exist.  Please enter the name of assets archive: [default: assets.pka]  ") or "assets.pka")
+        asset_file = str(input("Please enter the name of assets archive: [default: assets.pka, type \"None\" for Hajimari]  ") or "assets.pka").lower()
+        while not (os.path.exists(asset_file) or asset_file == "none"):
+            asset_file = str(input("File does not exist.  Please enter the name of assets archive: [default: assets.pka, type \"None\" for Hajimari]  ") or "assets.pka").lower()
+    if asset_file == "none":
+        asset_file = False
 
     # Grab the name of the target model (model to be have all shaders replaced)
     try:
