@@ -7,7 +7,7 @@ The pka and pkg libraries are forked from Julian Uy (github.com/uyjulian), all c
 ## Requirements:
 1. Python 3.9 and newer is required for use of these scripts.  It is free from the Microsoft Store, for Windows users.  For Linux users, please consult your distro.
 
-2. The zstandard for python is needed.  Install by typing "python3 -m pip install zstandard" in the command line / shell.  (The sys, os, shutil, struct, io modules are also required, but these are all already included in most basic python installations.)
+2. The zstandard for python is needed.  Install by typing "python3 -m pip install zstandard" in the command line / shell.  (The sys, os, shutil, struct, io, glob, and zlib modules are also required, but these are all already included in most basic python installations.)
 
 3. My forks of uyjulian's unpackpka and upackpkg, available respectively at https://github.com/eArmada8/unpackpkg and at https://github.com/eArmada8/unpackpka.  Releases come with the necessary files.
 
