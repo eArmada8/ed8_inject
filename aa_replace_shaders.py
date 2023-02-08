@@ -64,6 +64,8 @@ def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename = False)
         asset_f = open(pka_filename, 'rb')
         using_pka = True
         archive_files = get_pka_individual_file_contents(asset_f)
+    else:
+        archive_files = []
     with open(pkg_filename, 'rb') as f:
         file_contents = get_pkg_contents(f)
         new_file_contents = []
