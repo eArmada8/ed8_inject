@@ -79,7 +79,6 @@ def write_pkg_file (newfilename, file_stream, content_struct, magic = b'\x00\x00
         f.write(magic)
         f.write(struct.pack("<I", len(content_struct)))
         for i in range(len(content_struct)):
-            bin_name = content_struct[i]["file_entry_name"]
             f.write(struct.pack("<64s4I", content_struct[i]["file_entry_name"].encode("utf-8").ljust(64,b'\x00'),\
                 content_struct[i]["file_entry_uncompressed_size"],\
                 content_struct[i]["file_entry_compressed_size"],\
