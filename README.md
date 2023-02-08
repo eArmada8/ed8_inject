@@ -21,13 +21,22 @@ You need to know what models you want to mess with.  Grab [my python script](htt
 
 For CS3/CS4 models: Put extract_pka.py into *{CS3 / CS4 / Hajimari folder}*/data/asset/D3D11.  For CS3/CS4, run extract_pkg.py, press enter (first question asks for pka and defaults to assets.pka), then second question asks which files you need.  If you put in a search term, it will match and grab multiple files (typing in CHR087 is like \*CHR087\*).  For CS3, move the .pkg files you extracted to *{CS3 folder}*/data/asset/D3D11_us.
 
-For Hajimari models: You don't need extract_pka for CLE Hajimari since it's not archived in the first place.  However, to use Hajimari assets in CS3 / CS4, the zstandard compression must be removed first.  Use aa - decompresspkg.py:
+For Hajimari models: You don't need extract_pka for CLE Hajimari since it's not archived in the first place.
 
+3. *Decompressing source models (Only for using CLE Hajimari assets in NISA CS3/CS4)*
+
+To use Hajimari assets in CS3 / CS4, the zstandard compression must be removed first.  Use aa - decompresspkg.py:
 `python3 "aa - decompresspkg.py" <PKG_NAME.pkg>`
 
-3. *Replacing a model with another model (injection)*
+4. *Replacing shaders in the source models (Only for moving an asset from one game to another)*
 
-Put aa - inject model.py and unpackpkg.py in *{CS3 folder}*/data/asset/D3D11_us or *{CS4 / Hajimari folder}*/data/asset/D3D11. Execute aa - inject model.py.  It asks for the source .pkg, then it asks for the target .pkg.  It will make a backup of the target, and then push the source into the target.  If there is a backup of the source, it will always use the backup to inject.  This means: 1. As long as you only use my tool instead of editing your own files, your original files are safe, 2. You can do easy swaps (inject A->B and then B->A will result in a swap, because it will always use the backup original of B to inject), and 3. You can restore the original model by injecting into itself (inject A->B and then B->B will restore B to original, because again it will always use the backup original of B to inject).  It will never overwrite the first backup, so you can literally do A->B, C->B, D->B, and then B->B and you will still end up with B.
+Put aa_replace_shaders.py, aa_inject_model.py and unpackpkg.py in *{CS3 / CS4 folder}*/data/asset/D3D11 (where you find the PKA for game you are intending to use the model in, *not* the one you obtained the model from).  Put the PKG file from another game into the same folder.  Run aa_replace_shaders.py, press enter (first question asks for pka and defaults to assets.pka), then second question asks which file want to patch.  Enter the name of the pkg file.  It will replace all the shaders for which there is a replacement shader, and it will leave behind a backup file.
+
+If you are moving a model to Hajimari, type None when it asks for assets.pka, and it will search all the pkg files in the current directory instead.  It will skip over the file you are trying to fix, of course.  *It is not smart enough to exclude other files, so please replace shaders one file at a time!*
+
+5. *Replacing a model with another model (injection)*
+
+Put aa_inject_model.py and unpackpkg.py in *{CS3 folder}*/data/asset/D3D11_us or *{CS4 / Hajimari folder}*/data/asset/D3D11. Execute aa_inject_model.py.  It asks for the source .pkg, then it asks for the target .pkg.  It will make a backup of the target, and then push the source into the target.  If there is a backup of the source, it will always use the backup to inject.  This means: 1. As long as you only use my tool instead of editing your own files, your original files are safe, 2. You can do easy swaps (inject A->B and then B->A will result in a swap, because it will always use the backup original of B to inject), and 3. You can restore the original model by injecting into itself (inject A->B and then B->B will restore B to original, because again it will always use the backup original of B to inject).  It will never overwrite the first backup, so you can literally do A->B, C->B, D->B, and then B->B and you will still end up with B.
 
 ### Notes:
 1. CS3 / CS4 / Hajimari assets can be used in each other's games, although currently there are shader issues which may result in inability to load.  CS1 and CS2 assets can only be used within their own games.
