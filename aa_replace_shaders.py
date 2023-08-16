@@ -36,14 +36,15 @@ def get_pka_individual_file_contents (f):
         file_entry_hash, file_entry_offset, file_entry_compressed_size, file_entry_uncompressed_size,\
             file_entry_flags = struct.unpack("<32sQIII", f.read(32+8+4+4+4))
         file_entries[file_entry_hash] = [file_entry_offset, file_entry_compressed_size, file_entry_uncompressed_size, file_entry_flags]
-    all_files = [x for y in package_entries.values() for x in y]
+    all_files = [x+[y] for y in package_entries.keys() for x in package_entries[y]]
     file_contents = []
     for i in range(len(all_files)):
         file_contents.append({"file_entry_name": all_files[i][0].decode('utf-8'),\
             "file_entry_uncompressed_size": file_entries[all_files[i][1]][2],\
             "file_entry_compressed_size": file_entries[all_files[i][1]][1],\
             "file_entry_offset": file_entries[all_files[i][1]][0],\
-            "file_entry_flags": file_entries[all_files[i][1]][3]})
+            "file_entry_flags": file_entries[all_files[i][1]][3],
+            "package_name": all_files[i][2]})
     return(file_contents)
 
 def find_file_in_pkg(file_to_find, list_of_pkgs_to_avoid = []):
@@ -77,10 +78,11 @@ def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename = False)
                         list_of_pkgs_to_avoid = [pkg_filename, new_pkg_filename]) # We don't want the old shader!
                     if file_match != False:
                         asset_f = open(file_match, 'rb')
-                        archive_files = get_pkg_contents(asset_f)
+                        archive_files = get_pkg_contents(asset_f, file_match)
                 shader_entries = [x for x in archive_files if file_contents[i]["file_entry_name"] == x["file_entry_name"]]
                 if len(shader_entries) > 0:
-                    print("Shader {0} found, replacing...".format(file_contents[i]["file_entry_name"]))
+                    print("Shader {0} found, replacing from {1}...".format(file_contents[i]["file_entry_name"],\
+                        shader_entries[0]["package_name"]))
                     file = retrieve_file (asset_f, shader_entries[0]["file_entry_name"], archive_files, decompress = False)
                     new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file,\
                         shader_entries[0]) # Offset will be fixed at time of packing

@@ -8,7 +8,7 @@
 import sys, os, shutil, struct, io
 from unpackpkg import * # Needed for games that compress the XML file
 
-def get_pkg_contents (f):
+def get_pkg_contents (f, package_name = ''):
     f.seek(0,0)
     file_contents = []
     magic = f.read(4)
@@ -19,6 +19,7 @@ def get_pkg_contents (f):
             file["file_entry_compressed_size"], file["file_entry_offset"],\
             file["file_entry_flags"] = struct.unpack("<64s4I", f.read(80))
         file["file_entry_name"] = file["file_entry_name"].rstrip(b"\x00").decode('utf-8')
+        file["package_name"] = package_name
         file_contents.append(file)
     return(file_contents)
 
