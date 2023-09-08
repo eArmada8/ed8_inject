@@ -27,11 +27,11 @@ def retrieve_file (f, file_entry_name, file_contents, decompress = True):
     file_entry = [x for x in file_contents if file_entry_name in x["file_entry_name"]]
     if len(file_entry) > 0:
         f.seek(file_entry[0]["file_entry_offset"],0)
-        if file_entry[0]["file_entry_flags"] & 0x1 and decompress:
+        if file_entry[0]["file_entry_flags"] & 1 and decompress:
             return(uncompress_nislzss(f, file_entry[0]["file_entry_uncompressed_size"], file_entry[0]["file_entry_compressed_size"]))
-        elif file_entry[0]["file_entry_flags"] & 0x4 and decompress:
+        elif file_entry[0]["file_entry_flags"] & 4 and decompress:
             return(uncompress_lz4(f, file_entry[0]["file_entry_uncompressed_size"], file_entry[0]["file_entry_compressed_size"]))
-        elif file_entry[0]["file_entry_flags"] & 0x24 and decompress:
+        elif file_entry[0]["file_entry_flags"] & 24 and decompress:
             return(uncompress_zstd(f, file_entry[0]["file_entry_uncompressed_size"], file_entry[0]["file_entry_compressed_size"]))
         else:
             return(f.read(file_entry[0]["file_entry_compressed_size"]))
