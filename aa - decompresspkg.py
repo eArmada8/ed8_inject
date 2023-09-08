@@ -59,7 +59,7 @@ if __name__ == "__main__":
                 f.seek(4, io.SEEK_CUR)
             if file_entry[3] & 4:
                 output_data = uncompress_lz4(f, file_entry[2], file_entry[1])
-            elif file_entry[3] & 8:
+            elif file_entry[3] & 24:
                 if "zstandard" in sys.modules:
                     output_data = uncompress_zstd(f, file_entry[2], file_entry[1])
                 else:
