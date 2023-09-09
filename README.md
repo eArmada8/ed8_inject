@@ -49,5 +49,9 @@ Put aa_inject_model.py and unpackpkg.py in *{CS3 folder}*/data/asset/D3D11_us or
 
 5. Any time you are porting a model into game that does not have that model (for example using a CS4 exclusive costume in CS3), you will want to copy the .inf file from the source game to the target game.  They are in *{CS3 / CS4 / Hajimari folder}*/data/chr/chr/*{character folder}*.  These should **not** be renamed, but copied as is.
 
+## Nintendo Switch games
+
+Run asset_xml_to_nx.py in the same folder with the Windows D3D11 .pkg file, and it will replace asset_D3D11.xml with asset_NX.xml (with all the internal structures changed to match NX entries).  Then run aa_replace_shaders.py as above step 4.  asset_xml_to_nx.py is dependent on aa_inject_model.py and unpackpkg.py being in the same folder to run.
+
 ## Tokyo Xanadu eX+
 Use aa - txe inject model.py instead.  Automatically pulls the required files from the .bra archives for injection.  Requires txe_file_extract.py and my fork of unpackpkg.py (eArmada/unpackpkg).
