@@ -60,6 +60,7 @@ def find_file_in_pkg(file_to_find, list_of_pkgs_to_avoid = []):
 
 # Shaders can be pulled from either a PKA or the current folder can be searched
 def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename = False):
+    missing_shaders = False
     using_pka = False
     if pka_filename != False:
         asset_f = open(pka_filename, 'rb')
@@ -92,13 +93,14 @@ def replace_shaders_in_pkg(pkg_filename, new_pkg_filename, pka_filename = False)
                     print("Shader {0} not found, including original...".format(file_contents[i]["file_entry_name"]))
                     file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
                     new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
+                    missing_shaders = True
             else:
                 file = retrieve_file (f, file_contents[i]["file_entry_name"], file_contents, decompress = False)
                 new_file_contents = insert_file_into_stream (new_file_stream, new_file_contents, file, file_contents[i])
         write_pkg_file (new_pkg_filename, new_file_stream, new_file_contents, magic = b'\x00\x00\x00\x00')
     if using_pka == True:
         asset_f.close()
-    return
+    return(missing_shaders)
 
 if __name__ == "__main__":
     # Set current directory
@@ -126,17 +128,34 @@ if __name__ == "__main__":
         if not os.path.exists(targetfile + '.pkg'):
             raise Exception('Error: Package "' + targetfile + '" does not exist!')
     except IndexError:
-        targetfile = str(input("Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: "))
+        if not asset_file == False:
+            targetfile = str(input("Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: [default: All PKG files] "))
+        else:
+            targetfile = str(input("Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: "))
         if targetfile[-4:] == '.pkg':
             targetfile = targetfile[:-4] # Strip off the '.pkg' if present
-        while not os.path.exists(targetfile + '.pkg'):
+        while not (os.path.exists(targetfile + '.pkg') or ((not asset_file == False) and targetfile == '')):
             targetfile = str(input("File does not exist.  Please enter the name (e.g. C_CHR000_C02) of model to patch with new shaders: "))
             if targetfile[-4:] == '.pkg':
                 targetfile = targetfile[:-4] # Strip off the '.pkg' if present
     targetfile = targetfile.upper()
 
-    # Make a target backup (prior backups will be overwritten)
-    shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.bak')
-
     # Patch model into target
-    replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
+    pkgs_with_missing_shaders = []
+    if (not asset_file == False) and targetfile == '':
+        pkg_files = [os.path.basename(x).lower().split('.pkg')[0] for x in glob.glob('*.pkg')]
+        for i in range(len(pkg_files)):
+            print("\r\nProcessing {}.pkg...".format(pkg_files[i]))
+            shutil.copy2(pkg_files[i] + '.pkg', pkg_files[i] + '.pkg.bak')
+            result = replace_shaders_in_pkg(pkg_files[i] + '.pkg.bak', pkg_files[i] + '.pkg', asset_file)
+            if result == True:
+                pkgs_with_missing_shaders.append(pkg_files[i])
+    else:
+        # Make a target backup (prior backups will be overwritten)
+        shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.bak')
+        result = replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
+        if result == True:
+            pkgs_with_missing_shaders.append(pkg_files[i])
+    if len(pkgs_with_missing_shaders) > 0:
+        print("\r\nWarning! Shader replacement was not successful in the following .pkg files: {}.".format([x.upper()+'.pkg' for x in pkgs_with_missing_shaders]))
+        input("Press Enter to continue.")
