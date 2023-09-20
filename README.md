@@ -1,6 +1,10 @@
 # ED8/ED9 Model Injection Tools
 A set of scripts that allow replacing one model with another in the Trails of Cold Steel games (including Hajimari CLE) and in Tokyo Xanadu eX+.
 
+## Tutorials:
+
+Please see the [wiki](https://github.com/eArmada8/ed8_inject/wiki), and the detailed documentation below.
+
 ## Credits:
 The pka and pkg libraries are forked from Julian Uy (github.com/uyjulian), all credit to them.  These scripts were developed with a fellow modder at LL who wishes to not be credited, but I am grateful for his research and contribution.
 
