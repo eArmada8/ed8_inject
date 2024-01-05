@@ -114,9 +114,10 @@ if __name__ == "__main__":
         elif not os.path.exists(asset_file):
             raise Exception('Error: Asset archive "' + asset_file + '" does not exist!')
     except IndexError:
-        asset_file = str(input("Please enter the name of assets archive: [default: assets.pka, type \"None\" for Hajimari]  ") or "assets.pka").lower()
+        input_string = "Please enter the name of assets archive.\n[default: assets.pka, can also be the name of a folder (of .pkg files) in the current folder, type \"None\" for Hajimari]  "
+        asset_file = str(input(input_string) or "assets.pka").lower()
         while not (os.path.exists(asset_file) or asset_file == "none"):
-            asset_file = str(input("File does not exist.  Please enter the name of assets archive: [default: assets.pka, type \"None\" for Hajimari]  ") or "assets.pka").lower()
+            asset_file = str(input("File does not exist.  " + input_string) or "assets.pka").lower()
     if asset_file == "none":
         asset_file = False
 
@@ -144,18 +145,34 @@ if __name__ == "__main__":
     pkgs_with_missing_shaders = []
     if (not asset_file == False) and targetfile == '':
         pkg_files = [os.path.basename(x).lower().split('.pkg')[0] for x in glob.glob('*.pkg')]
-        for i in range(len(pkg_files)):
-            print("\r\nProcessing {}.pkg...".format(pkg_files[i]))
-            shutil.copy2(pkg_files[i] + '.pkg', pkg_files[i] + '.pkg.bak')
-            result = replace_shaders_in_pkg(pkg_files[i] + '.pkg.bak', pkg_files[i] + '.pkg', asset_file)
-            if result == True:
-                pkgs_with_missing_shaders.append(pkg_files[i])
+        if asset_file.lower()[-4:] == '.pka': # Mass replace with .pka mode
+            for i in range(len(pkg_files)):
+                print("\r\nProcessing {}.pkg...".format(pkg_files[i]))
+                shutil.copy2(pkg_files[i] + '.pkg', pkg_files[i] + '.pkg.bak')
+                result = replace_shaders_in_pkg(pkg_files[i] + '.pkg.bak', pkg_files[i] + '.pkg', asset_file)
+                if result == True:
+                    pkgs_with_missing_shaders.append(pkg_files[i])
+        elif os.path.exists(asset_file) and os.path.isdir(asset_file) and len(glob.glob(asset_file+'/*.pkg')) > 0: # Folder with .pkg files mode
+            base_dir = os.getcwd()
+            os.chdir(base_dir+'/'+asset_file)
+            for i in range(len(pkg_files)):
+                print("\r\nProcessing {}.pkg...".format(pkg_files[i]))
+                shutil.copy2('../'+pkg_files[i] + '.pkg', '../'+pkg_files[i] + '.pkg.bak')
+                result = replace_shaders_in_pkg('../'+pkg_files[i] + '.pkg.bak', '../'+pkg_files[i] + '.pkg', False)
+                if result == True:
+                    pkgs_with_missing_shaders.append(pkg_files[i])
+            os.chdir(base_dir)
     else:
         # Make a target backup (prior backups will be overwritten)
         shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.bak')
-        result = replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
+        if asset_file.lower()[-4:] == '.pka':
+            result = replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
+        elif os.path.exists(asset_file) and os.path.isdir(asset_file) and len(glob.glob(asset_file+'/*.pkg')) > 0:
+            base_dir = os.getcwd()
+            os.chdir(base_dir+'/'+asset_file)
+            result = replace_shaders_in_pkg('../'+targetfile + '.pkg.bak', '../'+targetfile + '.pkg', False)
         if result == True:
-            pkgs_with_missing_shaders.append(pkg_files[i])
+            pkgs_with_missing_shaders.append(targetfile)
     if len(pkgs_with_missing_shaders) > 0:
         print("\r\nWarning! Shader replacement was not successful in the following .pkg files: {}.".format([x.upper()+'.pkg' for x in pkgs_with_missing_shaders]))
         input("Press Enter to continue.")
