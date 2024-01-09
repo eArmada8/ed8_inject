@@ -165,7 +165,7 @@ if __name__ == "__main__":
     else:
         # Make a target backup (prior backups will be overwritten)
         shutil.copy2(targetfile + '.pkg', targetfile + '.pkg.bak')
-        if asset_file.lower()[-4:] == '.pka':
+        if asset_file == False or asset_file.lower()[-4:] == '.pka':
             result = replace_shaders_in_pkg(targetfile + '.pkg.bak', targetfile + '.pkg', asset_file)
         elif os.path.exists(asset_file) and os.path.isdir(asset_file) and len(glob.glob(asset_file+'/*.pkg')) > 0:
             base_dir = os.getcwd()
