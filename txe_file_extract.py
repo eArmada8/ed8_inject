@@ -119,7 +119,7 @@ if __name__ == "__main__":
             extract_archive(args.filename, overwrite = args.overwrite, interactive = False)
         else:
             extract_files(args.filename, overwrite = args.overwrite, exact_match = args.exact, \
-                interactive = False, specific_archive = args.archive[0])
+                interactive = False, specific_archive = args.archive[0] if isinstance(args.archive,list) else False)
     else:
         fileName = str(input("Please enter the name of files to extract: [partial matches allowed]  "))
         if fileName[-4:] == '.bra':
