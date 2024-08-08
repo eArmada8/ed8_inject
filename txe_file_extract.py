@@ -3,7 +3,7 @@
 # Instructions: /path/to/python3 txe_file_extract.py --help
 # GitHub eArmada8/misc_kiseki
 
-import os, struct, sys, glob, zlib
+import os, struct, sys, glob, zlib, json
 
 def get_archivelist():
     return glob.glob('*.bra')
@@ -63,7 +63,8 @@ def extract_filedata(fileEntry):
     with open(fileEntry["archiveName"], 'rb') as f:
         f.seek(fileEntry['fileOffset'] + 16)
         if fileEntry['uncompressedSize'] <= fileEntry['compressedSize']:
-            return(f.read(fileEntry['uncompressedSize'] - 16))
+            f.seek(5,1)
+            return(f.read(fileEntry['uncompressedSize']))
         else:
             return(zlib.decompress(f.read(fileEntry['compressedSize'] - 16), wbits=-15))
 
@@ -101,6 +102,12 @@ def extract_archive(archivename, overwrite = False, interactive = False):
         return(True)
     else:
         return(False)
+
+def extract_archive_filelist(archivename):
+    files = get_filelist(archivename)
+    filelist = [x['fileNameEntry'].decode('utf-8').replace('\\','/') for x in files]
+    with open(archivename+'.json','wb') as ff:
+        ff.write(json.dumps(filelist,indent=4).encode('utf-8'))
 
 if __name__ == "__main__":
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
